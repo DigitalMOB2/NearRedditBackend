@@ -38,21 +38,22 @@ Users:
     - token balance -> burn related to owner's total supply
 
 APIs:
-    - transfer(from, to)
-    - burn(user_name, value)
-    - purchase(user_name, value, item_id)
-    - add_item(item_name, value, image_link)
-    - get_items
-    - get_items(user_name)
-    - mint(user_name, value)
+    - login(user_name)
+    - get_users()
     - add_moderator(user_name)
     - remove_moderator(user_name)
+    - get_balance(user_name)
     - start_benchmark
         - get_progress
         - get_results
-    - get_balance(user_name)
-    - add_user(user_name)
-    - get_users()
+    - mint(user_name, value)
+    - transfer(from, to)
+    //- burn(user_name, value)
+    - purchase(user_name, value, item_id)
+    - add_item(item_name, value, image_link)
+    - get_user_items(user_name)
+    - get_all_items
+
 
 
 A list of gimmicks that the user can purchase. Each gimmick has a price associated and a buy button. 
