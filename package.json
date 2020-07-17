@@ -1,0 +1,16 @@
+{
+  "name": "NearRedditBackend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/DigitalMOB2/NearRedditBackend.git",
+  "author": "Andreea Stefan",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "pg": "^8.3.0",
+    "pg-promise": "^10.5.8"
+  }
+}
