@@ -1,0 +1,62 @@
+Table users:
+    user_name -> public_key
+    access_key
+    user_type
+    balance
+
+Table items:
+    item_name
+    item_id -> public_key
+    image_link
+    price
+
+Table purchased_items:
+    user_name
+    item_id
+
+User types:
+    owner
+    moderator
+    user
+
+Owner:
+    - transfer
+    - mint
+    - addModerator
+    - removeModerator
+    - benchmarking with progress (API to get progress)
+    - real wallet
+
+Moderator:
+    - transfer
+    - mint
+    - token balance -> mint/burn related to owner's total supply
+
+Users:
+    - transfer
+    - burn
+    - token balance -> burn related to owner's total supply
+
+APIs:
+    - transfer(from, to)
+    - burn(user_name, value)
+    - purchase(user_name, value, item_id)
+    - add_item(item_name, value, image_link)
+    - get_items
+    - get_items(user_name)
+    - mint(user_name, value)
+    - add_moderator(user_name)
+    - remove_moderator(user_name)
+    - start_benchmark
+        - get_progress
+        - get_results
+    - get_balance(user_name)
+    - add_user(user_name)
+    - get_users()
+
+
+A list of gimmicks that the user can purchase. Each gimmick has a price associated and a buy button. 
+When the item is purchased, the buy button is replaced with a “purchased” status, 
+and the amount of tokens spent is subtracted from the initial balance. 
+The purpose of the feature is to showcase the burn tokens functionality. 
+
