@@ -31,34 +31,38 @@ const init = async function () {
 };
 
 const login = async function (req, res, next) {
-    console.log(req.query['user']);
+    console.log(req.query['user_name']);
 
     // TODO: check if exists 
     // if not add it to DB
     const client = await pool.connect()
     await client.query(`\
         INSERT INTO users (user_name, access_key, user_type) \
-        VALUES ('${req.query['user']}', '1234567890123456789', 'owner')\
+        VALUES ('${req.query['user_name']}', '1234567890123456789', 'owner')\
         `)
     client.release();
     
-    res.status(200).send('Added user ' + req.query['user']);
+    res.status(200).send('Added user ' + req.query['user_name']);
     console.log();
    };
 
 const get_users = async function (req, res, next) {
-    const client = await pool.connect()
+    /*const client = await pool.connect()
     var result = await client.query("SELECT * FROM users");
-    client.release()
+    client.release()*/
 
     console.log(result.rows);
     res.json(result.rows);
 };
 
 const add_moderator = async function (req, res, next) {
+    console.log("Moderator " + JSON.stringify(req.body.user_name) + " was added");
+    res.status(200).send();
 };
 
 const remove_moderator = async function (req, res, next) {
+    console.log("Moderator " + JSON.stringify(req.body.user_name) + " was removed");
+    res.status(200).send();
 };
 
 const get_balance = async function (req, res, next) {
@@ -74,9 +78,15 @@ const get_benchmark_result = async function (req, res, next) {
 };
 
 const mint = async function (req, res, next) {
+    console.log(JSON.stringify(req.body));
+
+    //res.status(200).res.json(req.body);//.send(`Mint user_name=${req.body.user_name} value=${req.body.value}`);
+    res.status(200).send('User modified with ID:' + JSON.stringify(req.body));
 };
 
 const transfer = async function (req, res, next) {
+    console.log(JSON.stringify(req.body));
+    res.status(200).send();
 };
 
 const purchase = async function (req, res, next) {

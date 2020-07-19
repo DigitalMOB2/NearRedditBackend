@@ -1,15 +1,19 @@
 {
   "name": "NearRedditBackend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "repository": "https://github.com/DigitalMOB2/NearRedditBackend.git",
   "author": "Andreea Stefan",
   "license": "MIT",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "start-dev": "nodemon main.js"
   },
   "dependencies": {
     "express": "^4.17.1",
-    "pg": "^8.3.0"
+    "nodemon": "^2.0.4",
+    "pg": "^8.3.0",
+    "swagger-jsdoc": "^4.0.0",
+    "swagger-ui-express": "^4.1.4"
   }
 }
