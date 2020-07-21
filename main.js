@@ -34,43 +34,25 @@ app.use(express.json());
 
 /**
  * @swagger
- * /login:
+ * /list_users_table:
  *  get:
- *    description: User login //login?user=<userName>
- *    parameters:
- *      - name: user_name
- *        in: query
- *        description: Username
- *        required: true
- *        schema:
- *          type: string
- *          format: string
- *          example:   # Sample object
- *               user_name: user1
+ *    description: Get user from table 
  *    responses:
  *      '200':
- *        description: Login succesful
+ *        description: Users' table
  */
+app.get("/list_users", api.list_users_table);
 
- /**
+/**
  * @swagger
- * /login:
+ * /list_purchased_table:
  *  get:
- *    description: Login with username
- *    parameters:
- *    - in: query
- *      name: user_name
- *      description: Username or click on "http://localhost:3000/login?user=user1"
- *      required: true
- *      schema:
- *             type: string
- *             example:   # Sample object
- *               user_name: user1
- *  responses:
- *         200:
- *          description: Moderator was added
+ *    description: Get purchased items from table 
+ *    responses:
+ *      '200':
+ *        description: Purchase table
  */
-app.get("/login", api.login); //login?user=<userName>
+app.get("/list_purchased", api.list_purchased_table);
 
 /**
  * @swagger
@@ -98,7 +80,7 @@ app.get("/get_users", api.get_users);
  *               user_name:
  *               type: string
  *             example:   # Sample object
- *               user_name: user1
+ *               user_name: Tony
  *  responses:
  *         200:
  *          description: Moderator was added
@@ -140,6 +122,8 @@ app.delete("/remove_moderator", api.remove_moderator);
  *        schema:
  *          type: string
  *          format: string
+ *          example:   # Sample object
+ *               user_name: Tony
  *    responses:
  *      '200':
  *        description: Balance successfuly received
@@ -187,7 +171,7 @@ app.get("/get_benchmark_result", api.get_benchmark_result);
  *    parameters:
  *    - in: "body"
  *      name: "body"
- *      description: Mint user and value
+ *      description: Mint user with value
  *      required: true
  *      schema:
  *             type: object
@@ -197,7 +181,7 @@ app.get("/get_benchmark_result", api.get_benchmark_result);
  *               value:
  *                 type: integer
  *             example:   # Sample object
- *               user_name: user1
+ *               user_name: Tony
  *               value: 10
  *  responses:
  *         200:
@@ -223,10 +207,10 @@ app.post("/mint", api.mint);
  *               user_name2:
  *                type: string
  *               value:
- *                 type: integer
+ *                type: integer
  *             example:   # Sample object
- *               user_name1: user1
- *               user_name2: user2
+ *               user_name1: Tony
+ *               user_name2: Mike de Kort
  *               value: 10
  *  responses:
  *         200:
@@ -249,53 +233,21 @@ app.post("/transfer", api.transfer);
  *             properties:
  *               user_name:
  *                type: string
- *               item_id:
- *                type: integer
- *               value:
- *                type: integer
+ *               item_name:
+ *                type: string
  *             example:   # Sample object
- *               user_name: user1
- *               item_id: 1
- *               value: 20
+ *               user_name: Theresa
+ *               item_name: Diamond Award
  *  responses:
  *         200:
  *          description: Purchase operation successful
  */
-app.get("/purchase", api.purchase);
-
-/**
- * @swagger
- * /add_item:
- *  post:
- *    summary: Add item
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Add an item to item list
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name:
- *                type: string
- *               item_link:
- *                type: string
- *               value:
- *                type: integer
- *             example:   # Sample object
- *               user_name: user1
- *               item_link: http://link?
- *               value: 20
- *  responses:
- *         200:
- *          description: Item was successfully added
- */
-app.get("/add_item", api.add_item);
+app.post("/purchase", api.purchase);
 
 /**
  * @swagger
  * /get_user_items:
- *  post:
+ *  get:
  *    parameters:
  *    - in: "body"
  *      name: "body"
@@ -327,8 +279,7 @@ app.get("/get_all_items", api.get_all_items);
 
 
 /*
-- login(user_name)
-- get_users()
+- get_users() - return user_name and type
 - add_moderator(user_name)
 - remove_moderator(user_name)
 - get_balance(user_name)
@@ -337,9 +288,7 @@ app.get("/get_all_items", api.get_all_items);
     - get_benchmark_result
 - mint(user_name, value)
 - transfer(from, to)
-//- burn(user_name, value)
-- purchase(user_name, item_id, value)
-- add_item(item_name, image_link, value)
+- purchase(user_name, item_id)
 - get_user_items(user_name)
 - get_all_items
 */

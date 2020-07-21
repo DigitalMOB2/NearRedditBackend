@@ -5,14 +5,13 @@ Table users:
     balance
 
 Table items:
-    item_name
-    item_id -> public_key
+    item_name -> public_key
     image_link
     price
 
 Table purchased_items:
     user_name
-    item_id
+    item_name
 
 User types:
     owner
