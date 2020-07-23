@@ -80,7 +80,7 @@ app.get("/get_users", api.get_users);
  *               user_name:
  *               type: string
  *             example:   # Sample object
- *               user_name: Tony
+ *               user_name: Theresa
  *  responses:
  *         200:
  *          description: Moderator was added
@@ -102,7 +102,7 @@ app.post("/add_moderator", api.add_moderator);
  *               user_name:
  *               type: string
  *             example:   # Sample object
- *               user_name: user1
+ *               user_name: Deveon Lane
  *  responses:
  *         200:
  *          description: Moderator was removed
@@ -123,7 +123,7 @@ app.delete("/remove_moderator", api.remove_moderator);
  *          type: string
  *          format: string
  *          example:   # Sample object
- *               user_name: Tony
+ *               user_name: Leslie Alexander
  *    responses:
  *      '200':
  *        description: Balance successfuly received
@@ -181,7 +181,7 @@ app.get("/get_benchmark_result", api.get_benchmark_result);
  *               value:
  *                 type: integer
  *             example:   # Sample object
- *               user_name: Tony
+ *               user_name: Eleanor Pena
  *               value: 10
  *  responses:
  *         200:
@@ -209,8 +209,8 @@ app.post("/mint", api.mint);
  *               value:
  *                type: integer
  *             example:   # Sample object
- *               user_name1: Tony
- *               user_name2: Mike de Kort
+ *               user_name1: Theresa
+ *               user_name2: Courtney Henry
  *               value: 10
  *  responses:
  *         200:
@@ -259,7 +259,7 @@ app.post("/purchase", api.purchase);
  *               user_name:
  *               type: string
  *             example:   # Sample object
- *               user_name: user1
+ *               user_name: Eleanor Pena
  *  responses:
  *         200:
  *          description: Get the item list of a user
@@ -276,7 +276,6 @@ app.get("/get_user_items", api.get_user_items);
  *        description: Get the item list
  */
 app.get("/get_all_items", api.get_all_items);
-
 
 /*
 - get_users() - return user_name and type

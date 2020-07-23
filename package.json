@@ -7,13 +7,35 @@
   "license": "MIT",
   "scripts": {
     "start": "node main.js",
-    "start-dev": "nodemon main.js"
+    "start-dev": "nodemon main.js",
+    "build": "node asconfig.js",
+    "dev:deploy:contract": "near dev-deploy",
+    "deploy:contract": "near deploy",
+    "deploy": "yarn build && yarn deploy:contract && yarn deploy:pages",
+    "prestart": "yarn build && yarn deploy:contract",
+    "start-parcel": "parcel src/index.html",
+    "asp": "asp --verbose",
+    "test": "yarn asp && yarn jest",
+    "jest": "yarn build && jest test",
+    "dev": "yarn build && yarn dev:deploy:contract && env-cmd -f ./neardev/dev-account.env nodemon near.js"
   },
+
   "dependencies": {
     "express": "^4.17.1",
     "nodemon": "^2.0.4",
     "pg": "^8.3.0",
     "swagger-jsdoc": "^4.0.0",
-    "swagger-ui-express": "^4.1.4"
+    "swagger-ui-express": "^4.1.4",
+    "near-api-js": "^0.25.1",
+    "regenerator-runtime": "^0.13.5"
+  },
+
+  "devDependencies": {
+    "assemblyscript": "^0.9.4",
+    "env-cmd": "^10.1.0",
+    "jest": "^26.0.1",
+    "near-sdk-as": "^0.4.2",
+    "near-shell": "^0.24.2",
+    "parcel-bundler": "^1.12.4"
   }
 }
