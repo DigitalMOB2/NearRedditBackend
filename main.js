@@ -17,7 +17,7 @@ const swaggerOptions = {
       contact: {
         name: "Andreea Stefan"
       },
-      servers: ["http://188.166.164.13:3000"]
+      servers: ["http://localhost:3000"]
     }
   },
   // ['.routes/*.js']
