@@ -1,8 +1,10 @@
 const regenerator = require("regenerator-runtime/runtime");
 const nearAPI = require("near-api-js");
 const getConfig = require("./src/config");
-const BN = require ("bn.js");
+const BN = require("bn.js");
+const base64 = require("base-64");
 const {createTransaction} = require("near-api-js/lib/transaction");
+const { get_balance } = require("./api");
 //const { Context, u128 } = require("near-sdk-as");
 
 let nearConfig = getConfig(process.env.NODE_ENV || "development");
@@ -14,9 +16,9 @@ let contractOwner;
 
 // Account info
 const account = {
-    name: 'andreea.testnet',
+    name: 'reddit.testnet',
     network: 'default',
-    privateKey: "ed25519:3mYSHoTEaGJZMqBwEZdW6oGXCtRJh8egeS8NrceSeCgB59na2A7JwvmFqTLAhiwvuR2hNf9MbTKv4oDwdva3bfXa"
+    privateKey: "ed25519:4mc4ukS9iJv84n9gz5x2iJWqH1vw8tzY7e35HAUp6xThvXd3hgZ6e8ZmXgkciyVJ5GwNT6W3x8kinKM8Z8QmFrpt"
 };
 
 // Connects to NEAR and provides `near`, `walletAccount` and `contract` objects in `window` scope
@@ -24,151 +26,125 @@ async function connect() {
     // keystore instance
     let keyStore = new nearAPI.keyStores.InMemoryKeyStore();
 
-    // Generate a new keypair from privateKey
-    const keypair = nearAPI.utils.key_pair.KeyPair.fromString(account.privateKey);
+    // Generate a new keyPair from privateKey
+    const keyPair = nearAPI.utils.key_pair.KeyPair.fromString(account.privateKey);
+    console.assert(keyPair.toString() === account.privateKey, 'the key pair does not match expected value');
 
-    // await keyStore.setKey(nearConfig.networkId, account.name, random);
-    await keyStore.setKey(nearConfig.networkId, account.name, keypair);
+    await keyStore.setKey(nearConfig.networkId, account.name, keyPair);
 
     // initializing connection to the NEAR node
     nearConnection = await nearAPI.connect(Object.assign(nearConfig, {deps: {keyStore: keyStore}}));
-  
-    /*
-    // get signer public key
-    let signer = new nearAPI.InMemorySigner(keyStore);
-    //let publicKey = await signer.getPublicKey(account.name, nearConfig.networkId);
-    //console.log("Public Key = ", publicKey);
-    //let newPublicKey = await signer.createKey(account.name, nearConfig.networkId);
-    //console.log("New Public Key = ", newPublicKey);
 
-    console.log("KeyPair Public key = " + keypair.getPublicKey());
-
-   // let acc = await nearConnection.account(account.name);
-    //await acc.addKey(newPublicKey);
-
-    const publicKey = await nearConnection.connection.signer.getPublicKey(account.name, nearConfig.networkId);
-    console.log("Public Key = ", publicKey.toString());
-*/
-/*
-    console.log('signer = ' + nearConnection.connection.signer);
-
-    // add random access key
-    let acc = await nearConnection.account(account.name);
-    let randomKey = nearAPI.utils.key_pair.KeyPair.fromRandom('ed25519');
-    await acc.addKey(randomKey.publicKey);
-
-    console.log(keypair.getPublicKey().toString());
-
-    // Initializing connection to the NEAR node.
-    let connection = await nearAPI.connect(Object.assign(nearConfig, {deps: {keyStore: keyStore}}));
-
-    // init wallet
-    //walletAccount = new nearAPI.WalletAccount(near);
-    */
+    return {randomKey: keyPair, keyStore: keyStore, connection: nearConnection};
 }
 
-async function loadContract() {
-    console.log('nearConfig', nearConfig);
-
-    contract = await nearConnection.loadContract(nearConfig.contractName, {
-        // NOTE: This configuration only needed while NEAR is still in development
-        viewMethods: ['totalSupply', 'balanceOf', 'allowance'],
-        changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership'],
-        sender: account.name
-    });
+async function initContract(value) {
+    connObj = await connect();
+    await callTransaction('init', {totalSupply: value}, connObj);
 }
 
-async function initContract() {
-    //Context.setSigner_account_id(contractOwner);
-    // await contract.init({ initialOwner: account.name, totalSupply: '1000000'});
-    let args = { totalSupply: '1000000000000000000000000000000000000' };
-    let serialized = Buffer.from(JSON.stringify(args));
-    nearAPI.transactions.functionCall('init', serialized, new BN('300000000000000'), new BN('1'));
+async function transfer(toUserName, value) {
+    connObj = await connect();
+    await callTransaction('transfer', {to: toUserName, tokens: value}, connObj);
 }
-
-async function transfer(toUser, value) {
-    //Example: transfer(u128.fromString('100'));
-    await contract.transfer({ to: toAccessKey, tokens: value });
-}
-
+    
 async function mint(value) {
-    //Example: mint(u128.fromString('100'));
-    let args = { tokens: value };
-    let serialized = Buffer.from(JSON.stringify(args));
-    nearAPI.transactions.functionCall('mint', serialized, new BN('300000000000000'), new BN('1'));
-    //await contract.mint({ tokens: value });
+    connObj = await connect();
+    await callTransaction('mint', {tokens: value}, connObj);
 }
 
 async function burn(value) {
-    await contract.mint({ tokens: value });
+    connObj = await connect();
+    await callTransaction('burn', {tokens: value}, connObj);
 }
 
-async function addModerator(name) {
-    await contract.addModerator({ moderator: name });
+async function addModerator(userName) {
+    connObj = await connect();
+    await callTransaction('addModerator', {moderator: userName}, connObj);
 }
 
-async function removeModerator(name) {
-    await contract.removeModerator({ moderator: name });
+async function removeModerator(userName) {
+    connObj = await connect();
+    await callTransaction('removeModerator', {moderator: userName}, connObj);
 }
 
-async function getBalance() {
-    return await contract.balanceOf({tokenOwner: account.name});
+async function balanceOf() {
+    connObj = await connect();
+    let result = await callTransaction('balanceOf', {tokenOwner: account.name}, connObj);
+    console.log("result = ", base64.decode(result.status.SuccessValue));
 }
 
-async function createNewTransaction(connObj) {
-    // Fetch and decode latest block hash
+async function totalSupply() {
+    connObj = await connect();
+    let result = await callTransaction('totalSupply', {}, connObj);
+    console.log("result = ", base64.decode(result.status.SuccessValue));
+}
+
+async function callTransaction(methodName, args, connObj) {
+    // fetch and decode latest block hash
     let networkStatus = await connObj.connection.connection.provider.status();
     let recentBlock = networkStatus.sync_info.latest_block_hash;
     let blockHash = nearAPI.utils.serialize.base_decode(recentBlock);
 
+    // Fetch access key nonce for given key
+    const response = await connObj.connection.connection.provider.query(`access_key/${account.name}`, '');
+    const key = response.keys.filter(k => k.public_key === connObj.randomKey.publicKey.toString())[0];
+    console.assert(key.access_key.permission === 'FullAccess');
+    let nonce = key.access_key.nonce; // will increment with each use of the key
+    console.log("Nonce = " + nonce);
+
+    // serialize actions
+    let serialized = Buffer.from(JSON.stringify(args));
+    let actions = [
+        nearAPI.transactions.functionCall(methodName, serialized, new BN('300000000000000'), new BN('1')),
+    ];
+
+    // create transaction
+    console.log("Transaction nonce = " + nonce);
+    let transaction = nearAPI.transactions.createTransaction(account.name, connObj.randomKey.publicKey, nearConfig.contractName, ++nonce, actions, blockHash);
+
+    // sign transaction
     let signer = await connObj.connection.connection.signer;
+    let [txHash, signedTx] = await nearAPI.transactions.signTransaction(transaction, signer, account.name, nearConfig.networkId);
 
-/*       let args = {initialOwner: account.name, totalSupply: '100'};
-    let serialized = Buffer.from(JSON.stringify(args));
-
-    let actions = [
-        nearAPI.transactions.functionCall('init', serialized, new BN('300000000000000'), new BN('1')),
-    ];
-*/
-    let args = {tokens: '100'};
-    let serialized = Buffer.from(JSON.stringify(args));
-
-    let actions = [
-        nearAPI.transactions.functionCall('mint', serialized, new BN('300000000000000'), new BN('1'))
-    ];
-
-    //const accessKey = await nearConnection.account.findAccessKey()
-    //if (!accessKey) {
-        // Create transaction
-        console.log("Transaction nonce = " + connObj.randomKey.nonce);
-        let transaction = nearAPI.transactions.createTransaction(account.name, connObj.randomKey.publicKey, nearConfig.contractName, ++connObj.randomKey.nonce, actions, blockHash);
-        //sign transaction
-        let [txHash, signedTx] = await nearAPI.transactions.signTransaction(transaction, signer, account.name, nearConfig.networkId);
-
-        // Send transaction
-        try {
-            await connObj.connection.connection.provider.sendTransaction(signedTx);
-        } catch (error) {
-            let {type, message} = error;
-            console.log(`[${type}]`, message);
+    // send transaction
+    let receipt;
+    try {
+        receipt = await connObj.connection.connection.provider.sendTransaction(signedTx);
+    } catch (error) {
+        let {type, message} = error;
+        console.log(`[${type}]`, message);
+        
+        switch (type) {
+            case 'InvalidTxError::Expired':
+            console.log('[ FIX --> ] grab a more recent block hash')
+            break;
+        
+            case 'InvalidTxError::InvalidNonce':
+            console.log('[ FIX --> ] increment the nonce')
+            break;
+        
+            default:
+            break;
         }
-    //}
+    }
+
+    console.log(JSON.stringify(receipt, null, 2));
+    return receipt;
 }
 
-async function createAccessKeys(numberOfKeys) {
-    let acc = await nearConnection.account(account.name);
-    const accessKeys = [];
-    for (let i = 0; i < numberOfKeys; i++) {
-        let randomKey = nearAPI.utils.key_pair.KeyPair.fromRandom('ed25519');
-        await acc.addKey(randomKey.publicKey);
-        accessKeys.push(randomKey);
-    }
-    return accessKeys;
+async function addAccessKey(nonce) {
+
+    let randomKey = nearAPI.utils.key_pair.KeyPair.fromRandom('ed25519');
+
+    console.log('randomKey.publicKey = ' + randomKey.publicKey);
+    
+    return randomKey.publicKey;
 }
 
 async function sendTransactions() {
     let acc = await nearConnection.account(account.name);
-    let howMany = 10;
+    let howMany = 1;
     const connections = [];
  /*   let transactionBatch = 100;
     for (let j = 0; j < howMany; j++) {
@@ -202,11 +178,16 @@ async function sendTransactions() {
     */
 
     let connectionSlice = connections;
-    let transactionBatch = 10;
+    let transactionBatch = 1;
     //const tStart = performance.now();
     while (connectionSlice.length) {
         await Promise.all(connectionSlice.splice(0, transactionBatch).map(async(connection) => {
-            const power = await createNewTransaction(connection);
+            let args = { tokenOwner: account.name };
+            //let args = { tokens: value };
+            let serialized = Buffer.from(JSON.stringify(args));
+            let actions = [nearAPI.transactions.functionCall('balanceOf', serialized, new BN('300000000000000'), new BN('1'))];
+            //let actions = [nearAPI.transactions.functionCall('burn', serialized, new BN('300000000000000'), new BN('1'))];
+            const power = await createNewTransaction(connection, actions);
         }));
     } 
     //let tEnd = performance.now();
@@ -215,26 +196,28 @@ async function sendTransactions() {
 
 module.exports = {
     connect,
-    loadContract,
     initContract,
     transfer,
     mint,
     burn,
     addModerator,
     removeModerator,
-    getBalance,
-    createNewTransaction,
-    createAccessKeys,
+    balanceOf,
+    totalSupply,
+    addAccessKey,
     sendTransactions
 }
 
-const mainLoop = async _ => {
+const main = async _ => {
+    //let publicKey = await addAccessKey(49810);
     await connect();
-    //await createAccessKeys(1);
-    //await loadContract();
-    await initContract();
-    
-    await mint('100'); //u128.fromString('100');
-    await sendTransactions();
+   // await totalSupply();
+    await totalSupply();
+    await burn('37');
+    await totalSupply();
+
+   // await addModerator('Leslie Alexander');
+    //await removeModerator('Leslie Alexander');
+   // await mint('5840');
 };
-mainLoop();
+main();
