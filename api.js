@@ -19,8 +19,7 @@ const init = async function () {
             user_name varchar(100) NOT NULL,\
             access_key varchar(100) NOT NULL,\
             user_type varchar(10) NOT NULL,\
-            balance int, \
-            CONSTRAINT PK_name PRIMARY KEY (user_name)\
+            balance int \
         )");
     await client.query("\
         INSERT INTO users (user_name, access_key, user_type, balance) \
@@ -93,10 +92,10 @@ const list_purchased_table = async function (req, res, next) {
 
 const get_users = async function (req, res, next) {
     const client = await pool.connect()
-    var result = await client.query("SELECT user_name, user_type FROM users");
+    var result = await client.query("SELECT user_name, user_type, balance FROM users");
     client.release();
 
-    console.log(result.rows);
+    //console.log(result.rows);
     res.json(result.rows);
 };
 
@@ -159,41 +158,47 @@ const mint = async function (req, res, next) {
 
 const transfer = async function (req, res, next) {
     // TODO: check if balance is greater or equal to value
-    const client = await pool.connect()
-    var result = await client.query(`\
-        UPDATE users \
-        SET balance = balance - ${req.body.value} \
-        WHERE user_name = '${req.body.user_name1}';\
-        `);
-    var result2 = await client.query(`\
-        UPDATE users \
-        SET balance = balance + ${req.body.value} \
-        WHERE user_name = '${req.body.user_name2}';\
-        `);
-    client.release();
-
-    console.log('Transfer ' + JSON.stringify(req.body.value) + ' from ' + JSON.stringify(req.body.user_name1) + 'to' + JSON.stringify(req.body.user_name2));
-    res.status(200).send('Transfer ' + JSON.stringify(req.body.value) + ' from ' + JSON.stringify(req.body.user_name1) + 'to' + JSON.stringify(req.body.user_name2));
+    const client = await pool.connect();
+    var query = await client.query(`SELECT balance FROM users WHERE user_name = '${req.body.user_name}'`);
+    if (query.rows[0].balance >= req.body.value) {
+        var result = await client.query(`\
+            UPDATE users \
+            SET balance = balance - ${req.body.value} \
+            WHERE user_name = '${req.body.user_name1}';\
+            `);
+        var result2 = await client.query(`\
+            UPDATE users \
+            SET balance = balance + ${req.body.value} \
+            WHERE user_name = '${req.body.user_name2}';\
+            `);
+        console.log('Transfer ' + JSON.stringify(req.body.value) + ' from ' + JSON.stringify(req.body.user_name1) + 'to' + JSON.stringify(req.body.user_name2));
+        res.status(200).send('Transfer ' + JSON.stringify(req.body.value) + ' from ' + JSON.stringify(req.body.user_name1) + 'to' + JSON.stringify(req.body.user_name2));
+    } else {
+        res.status(100).send("Transfer failed: balance is too low");
+    }
+    client.release();    
 };
 
 const purchase = async function (req, res, next) {
     const client = await pool.connect();
     var price = await client.query(`SELECT price FROM items WHERE item_name = '${req.body.item_name}'`);
-    //console.log(price.rows[0].price);
-    // TODO: check if balance is greater or equal to price.rows[0].price
-    var result = await client.query(`\
-        INSERT INTO purchased_items \
-        VALUES ('${req.body.user_name}', '${req.body.item_name}');\
-        `);
-    var result2 = await client.query(`\
-        UPDATE users \
-        SET balance = balance - ${price.rows[0].price} \
-        WHERE user_name = '${req.body.user_name}';\
-        `);
-    client.release();
-
-    console.log('User ' + JSON.stringify(req.body.user_name) + ' bought ' + JSON.stringify(req.body.item_name) + ' for price ' + JSON.stringify(price.rows[0].price));
-    res.status(200).send('User ' + JSON.stringify(req.body.user_name) + ' bought ' + JSON.stringify(req.body.item_name) + ' for price ' + JSON.stringify(price.rows[0].price));
+    var balance = await client.query(`SELECT balance FROM users WHERE user_name = '${req.body.user_name}'`);
+    if (balance.rows[0].balance >= price.rows[0].price) {
+        var result = await client.query(`\
+            INSERT INTO purchased_items \
+            VALUES ('${req.body.user_name}', '${req.body.item_name}');\
+            `);
+        var result2 = await client.query(`\
+            UPDATE users \
+            SET balance = balance - ${price.rows[0].price} \
+            WHERE user_name = '${req.body.user_name}';\
+            `);
+        console.log('User ' + JSON.stringify(req.body.user_name) + ' bought ' + JSON.stringify(req.body.item_name) + ' for price ' + JSON.stringify(price.rows[0].price));
+        res.status(200).send('User ' + JSON.stringify(req.body.user_name) + ' bought ' + JSON.stringify(req.body.item_name) + ' for price ' + JSON.stringify(price.rows[0].price));
+    } else {
+        res.status(100).send("Purchase failed: balance is too low");
+    }
+    client.release(); 
 };
 
 const get_user_items = async function (req, res, next) {

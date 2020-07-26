@@ -17,7 +17,8 @@
     "asp": "asp --verbose",
     "test": "yarn asp && yarn jest",
     "jest": "yarn build && jest test",
-    "dev": "yarn build && yarn dev:deploy:contract && env-cmd -f ./neardev/dev-account.env node near.js"
+    "dev": "yarn build && yarn dev:deploy:contract && env-cmd -f ./neardev/dev-account.env node near.js",
+    "benchmark": "export NODE_ENV=development && node nearBenchmark.js"
   },
   "dependencies": {
     "base-64": "^0.1.0",

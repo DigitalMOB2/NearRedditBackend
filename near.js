@@ -5,14 +5,11 @@ const BN = require("bn.js");
 const base64 = require("base-64");
 const {createTransaction} = require("near-api-js/lib/transaction");
 const { get_balance } = require("./api");
-//const { Context, u128 } = require("near-sdk-as");
+
 
 let nearConfig = getConfig(process.env.NODE_ENV || "development");
 let nearConnection;
-let walletAccount;
-let contract;
 let nearLib;
-let contractOwner;
 
 // Account info
 const account = {
@@ -26,13 +23,14 @@ async function connect() {
     // keystore instance
     let keyStore = new nearAPI.keyStores.InMemoryKeyStore();
 
-    // Generate a new keyPair from privateKey
+    // generate a new keyPair from privateKey
     const keyPair = nearAPI.utils.key_pair.KeyPair.fromString(account.privateKey);
     console.assert(keyPair.toString() === account.privateKey, 'the key pair does not match expected value');
 
+    // set key to keyStore
     await keyStore.setKey(nearConfig.networkId, account.name, keyPair);
 
-    // initializing connection to the NEAR node
+    // initialize connection to the NEAR node
     nearConnection = await nearAPI.connect(Object.assign(nearConfig, {deps: {keyStore: keyStore}}));
 
     return {randomKey: keyPair, keyStore: keyStore, connection: nearConnection};

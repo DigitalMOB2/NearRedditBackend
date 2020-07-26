@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME || 'reddit.testnet'; /* TODO: fill this in! */
+const CONTRACT_NAME = process.env.CONTRACT_NAME || 'listens-counter'; /* TODO: fill this in! */
 
 function getConfig (env) {
   switch (env) {
