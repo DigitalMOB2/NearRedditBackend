@@ -156,7 +156,7 @@ const transfer = async function (req, res, next) {
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name2}'`);
 
-        if (await nearAPI.transfer(query.rows[0].account_id, query2.rows[0].account_id, JSON.stringify(req.body.value))) {
+        if (await nearAPI.transfer(query.rows[0].account_id, query2.rows[0].account_id, req.body.value.toString())) {
             var result = await client.query(`\
                 UPDATE users \
                 SET balance = balance - ${req.body.value} \
