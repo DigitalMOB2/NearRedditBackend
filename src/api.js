@@ -1,5 +1,4 @@
 
-
 //const { Near } = require("./near.js");
 const { Pool } = require("pg");
 
@@ -37,7 +36,7 @@ class Near {
             changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership']
         }
     
-        const config = require('./config')('ci');//'development');
+        const config = require('./config')(process.env.NODE_ENV || 'ci');//'development');
         const keyStore = new MergeKeyStore([
             new InMemoryKeyStore(),
             new UnencryptedFileSystemKeyStore('./neardev')
@@ -98,8 +97,6 @@ class Near {
             process.stdout.write('-');
         }
         console.timeEnd('create accounts');
-
-        console.log(JSON.stringify(this.accountsMap));
     
         return this.accountsMap;
     }
@@ -194,7 +191,7 @@ class Near {
     }
 }
 
-async function init () {
+const init = async function () {
     const client = await pool.connect();
     await client.query("DROP TABLE IF EXISTS users, items, purchased_items;");
 
@@ -210,22 +207,12 @@ async function init () {
 
     let users = ['Theresa', 'Eleanor Pena', 'Courtney Henry', 'Leslie Alexander', 'Deveon Lane'];
     const near = Near.getInstance();
-    let accountsMap = await near.createAccounts(5);
-
-    const accounts = Array.from(accountsMap);
-    console.log("user:" + JSON.stringify(accounts[0][0]));
-    console.log("user:" + JSON.stringify(accounts[2][0]));
-
+    let accountsMap = await near.createAccounts(5).catch(console.error);
     console.log("accounts created: " + JSON.stringify(accountsMap));
     let i = 0;
     for (const [accountId, account] of accountsMap.entries()) {
         try {
-            let type;
-            if  (i == 0) {
-              type = 'owner';
-            } else { 
-              type = 'user';
-            }
+            let type = (i == 0) ? 'owner' : 'user';
             await client.query(`\
                 INSERT INTO users (user_name, account_id, public_key, user_type, balance) \
                 VALUES ('${users[i]}', '${accountId}', '${account.publicKey}', '${type}', 5000)\
@@ -268,7 +255,7 @@ async function init () {
     client.release()
 };
 
-async function list_users_table (req, res, next) {
+const list_users_table = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query("SELECT * FROM users");
     client.release();
@@ -277,7 +264,7 @@ async function list_users_table (req, res, next) {
     res.json(result.rows);
 };
 
-async function list_purchased_table(req, res, next) {
+const list_purchased_table = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query("SELECT * FROM purchased_items");
     client.release();
@@ -286,7 +273,7 @@ async function list_purchased_table(req, res, next) {
     res.json(result.rows);
 };
 
-async function get_users(req, res, next) {
+const get_users = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query("SELECT user_name, user_type, balance FROM users");
     client.release();
@@ -295,7 +282,7 @@ async function get_users(req, res, next) {
     res.json(result.rows);
 };
 
-async function add_moderator(req, res, next) {
+const add_moderator = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query(`\
         UPDATE users \
@@ -308,7 +295,7 @@ async function add_moderator(req, res, next) {
     res.status(200).send();
 };
 
-async function remove_moderator(req, res, next) {
+const remove_moderator = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query(`\
         UPDATE users \
@@ -321,7 +308,7 @@ async function remove_moderator(req, res, next) {
     res.status(200).send();
 };
 
-async function get_balance(req, res, next) {
+const get_balance = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query(`SELECT balance FROM users WHERE user_name = '${req.query['user_name']}'`);
     client.release();
@@ -330,16 +317,16 @@ async function get_balance(req, res, next) {
     res.status(200).send(JSON.stringify(result.rows[0].balance));
 };
 
-async function start_benchmark(req, res, next) {
+const start_benchmark = async function (req, res, next) {
 };
 
-async function get_benchmark_progress(req, res, next) {
+const get_benchmark_progress = async function (req, res, next) {
 };
 
-async function get_benchmark_result(req, res, next) {
+const get_benchmark_result = async function (req, res, next) {
 };
 
-async function mint(req, res, next) {
+const mint = async function (req, res, next) {
     const client = await pool.connect()
     var result = await client.query(`\
         UPDATE users \
@@ -352,7 +339,7 @@ async function mint(req, res, next) {
     res.status(200).send('Mint ' + JSON.stringify(req.body.user_name) + ' with value ' + JSON.stringify(req.body.value));
 };
 
-async function transfer(req, res, next) {
+const transfer = async function (req, res, next) {
     // TODO: check if balance is greater or equal to value
     const client = await pool.connect();
     var query = await client.query(`SELECT balance FROM users WHERE user_name = '${req.body.user_name1}'`);
@@ -375,7 +362,7 @@ async function transfer(req, res, next) {
     client.release();    
 };
 
-async function purchase(req, res, next) {
+const purchase = async function (req, res, next) {
     const client = await pool.connect();
     var price = await client.query(`SELECT price FROM items WHERE item_name = '${req.body.item_name}'`);
     var balance = await client.query(`SELECT balance FROM users WHERE user_name = '${req.body.user_name}'`);
@@ -397,7 +384,7 @@ async function purchase(req, res, next) {
     client.release(); 
 };
 
-async function get_user_items(req, res, next) {
+const get_user_items = async function (req, res, next) {
     const client = await pool.connect();
     var result = await client.query(`SELECT item_name FROM purchased_items WHERE user_name = '${req.query['user_name']}'`);
     client.release();
@@ -406,7 +393,7 @@ async function get_user_items(req, res, next) {
     res.json(result.rows);
 };
 
-async function get_all_items(req, res, next) {
+const get_all_items = async function (req, res, next) {
     const client = await pool.connect();
     var result = await client.query("SELECT * FROM items");
     client.release();
@@ -415,310 +402,20 @@ async function get_all_items(req, res, next) {
     res.json(result.rows);
 };
 
-const main = async _ => {
-  await init();
-}
-
-console.log('call main');
-main();
-console.log('after main');
-
-
-var express = require("express");
-var cors = require('cors');
-var app = express();
-//var api = require("./api");
-app.use(cors());
-
-const swaggerJsDoc = require("swagger-jsdoc");
-const swaggerUi = require("swagger-ui-express");
-
-const port = process.env.PORT || 3000;
-
-
-const swaggerOptions = {
-  swaggerDefinition: {
-    info: {
-      version: "1.0.0",
-      title: "NRB API",
-      description: "NRM API Information",
-      contact: {
-        name: "Andreea Stefan"
-      },
-      servers: ["http://localhost:3000"]
-    }
-  },
-  // ['.routes/*.js']
-  apis: ["main.js"]
-};
-
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-
-
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-app.use(express.json());
-
-
-/**
- * @swagger
- * /list_users_table:
- *  get:
- *    description: Get user from table 
- *    responses:
- *      '200':
- *        description: Users' table
- */
-app.get("/list_users", list_users_table);
-
-/**
- * @swagger
- * /list_purchased_table:
- *  get:
- *    description: Get purchased items from table 
- *    responses:
- *      '200':
- *        description: Purchase table
- */
-app.get("/list_purchased", list_purchased_table);
-
-/**
- * @swagger
- * /get_users:
- *  get:
- *    description: Get users list 
- *    responses:
- *      '200':
- *        description: User list
- */
-app.get("/get_users", get_users);
-
-/**
- * @swagger
- * /add_moderator:
- *  post:
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Add moderator
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name:
- *               type: string
- *             example:   # Sample object
- *               user_name: Theresa
- *  responses:
- *         200:
- *          description: Moderator was added
- */
-app.post("/add_moderator", add_moderator);
-
-/**
- * @swagger
- * /remove_moderator:
- *  delete:
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Remove user from moderator list
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name:
- *               type: string
- *             example:   # Sample object
- *               user_name: Deveon Lane
- *  responses:
- *         200:
- *          description: Moderator was removed
- */
-app.delete("/remove_moderator", remove_moderator);
-
-/**
- * @swagger
- * /get_balance:
- *  get:
- *    summary: Get balance
- *    parameters:
- *      - name: user_name
- *        in: query
- *        description: Username
- *        required: true
- *        schema:
- *          type: string
- *          format: string
- *          example:   # Sample object
- *               user_name: Leslie Alexander
- *    responses:
- *      '200':
- *        description: Balance successfuly received
- */
-app.get("/get_balance", get_balance);
-
-/**
- * @swagger
- * /start_benchmark:
- *  get:
- *    description: Start benchmark
- *    responses:
- *      '200':
- *        description: Benchmark Succesfuly started
- */
-app.get("/start_benchmark", start_benchmark);
-
-/**
- * @swagger
- * /get_benchmark_progress:
- *  get:
- *    description: Get benchmark progress
- *    responses:
- *      'value':
- *        description: Progress value
- */
-app.get("/get_benchmark_progress", get_benchmark_progress);
-
-/**
- * @swagger
- * /start_benchmark:
- *  get:
- *    description: Beanchmark result
- *    responses:
- *      '200':
- *        description: The result of the benchmarking process
- */
-app.get("/get_benchmark_result", get_benchmark_result);
-
-/**
- * @swagger
- * /mint:
- *  post:
- *    summary: Mint operation
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Mint user with value
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name:
- *                type: string
- *               value:
- *                 type: integer
- *             example:   # Sample object
- *               user_name: Eleanor Pena
- *               value: 10
- *  responses:
- *         200:
- *          description: Mint operation successful
- */
-app.post("/mint", mint);
-
-/**
- * @swagger
- * /transfer:
- *  post:
- *    summary: Transfer operation
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Transfer from a user to another
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name1:
- *                type: string
- *               user_name2:
- *                type: string
- *               value:
- *                type: integer
- *             example:   # Sample object
- *               user_name1: Theresa
- *               user_name2: Courtney Henry
- *               value: 10
- *  responses:
- *         200:
- *          description: Transfer operation successful
- */
-app.post("/transfer", transfer);
-
-/**
- * @swagger
- * /purchase:
- *  post:
- *    summary: Purchase item
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Purchase an item and add it to user's item list
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name:
- *                type: string
- *               item_name:
- *                type: string
- *             example:   # Sample object
- *               user_name: Theresa
- *               item_name: Diamond Award
- *  responses:
- *         200:
- *          description: Purchase operation successful
- */
-app.post("/purchase", purchase);
-
-/**
- * @swagger
- * /get_user_items:
- *  get:
- *    parameters:
- *    - in: "body"
- *      name: "body"
- *      description: Get the item list of a user
- *      required: true
- *      schema:
- *             type: object
- *             properties:
- *               user_name:
- *               type: string
- *             example:   # Sample object
- *               user_name: Eleanor Pena
- *  responses:
- *         200:
- *          description: Get the item list of a user
- */
-app.get("/get_user_items", get_user_items);
-
-/**
- * @swagger
- * /get_all_items:
- *  get:
- *    description: Get the item list
- *    responses:
- *      '200':
- *        description: Get the item list
- */
-app.get("/get_all_items", get_all_items);
-
-/*
-- get_users() - return user_name and type
-- add_moderator(user_name)
-- remove_moderator(user_name)
-- get_balance(user_name)
-- start_benchmark
-    - get_benchmark_progress
-    - get_benchmark_result
-- mint(user_name, value)
-- transfer(from, to)
-- purchase(user_name, item_id)
-- get_user_items(user_name)
-- get_all_items
-*/
-
-app.listen(port, () => {
-    console.log("Server running on port " + port);
-   });
+module.exports = {
+    init,
+    list_users_table,
+    list_purchased_table,
+    get_users,
+    add_moderator,
+    remove_moderator,
+    get_balance,
+    start_benchmark,
+    get_benchmark_progress,
+    get_benchmark_result,
+    mint,
+    transfer,
+    purchase,
+    get_user_items,
+    get_all_items
+  }

@@ -14,14 +14,14 @@ describe('Token', function() {
     contract = await near.loadContract(nearConfig.contractName, {
       // NOTE: This configuration only needed while NEAR is still in development
       viewMethods: ['totalSupply', 'balanceOf', 'allowance'],
-      changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership'],
+      changeMethods: ['init', 'transfer', 'approve', 'transferFrom'],
       sender: alice
     });
   });
 
   describe('with alice as initial owner', function() {
     beforeAll(async function() {
-      await contract.init({ initialOwner: alice, totalSupply: '1000000'});
+      await contract.init({ initialOwner: alice });
 
       const aliceStartBalance = await contract.balanceOf({tokenOwner: alice});
       expect(aliceStartBalance).toBe('1000000');
