@@ -127,7 +127,7 @@ const mint = async function (req, res, next) {
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name}'`);
 
-    if (await nearAPI.mint(result.rows[0].account_id, JSON.stringify(req.body.value))) {
+    if (await nearAPI.mint(result.rows[0].account_id, req.body.value.toString())) {
         var result = await client.query(`\
             UPDATE users \
             SET balance = balance + ${req.body.value} \
