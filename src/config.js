@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME || 'listens-counter'; /* TODO: fill this in! */
+const CONTRACT_NAME = process.env.CONTRACT_NAME || 'token-contract-as'; /* TODO: fill this in! */
 
 function getConfig (env) {
   switch (env) {
@@ -15,18 +15,10 @@ function getConfig (env) {
     case 'testnet':
       return {
         networkId: 'default',
-        nodeUrl: 'https://rpc.testnet.near.org/',
+        nodeUrl: 'https://rpc.testnet.near.org',
         contractName: CONTRACT_NAME,
         walletUrl: 'https://wallet.testnet.near.org',
         helperUrl: 'https://helper.testnet.near.org'
-      }
-    case 'devnet':
-      return {
-        networkId: 'devnet',
-        nodeUrl: 'https://rpc.devnet.near.org',
-        contractName: CONTRACT_NAME,
-        walletUrl: 'https://wallet.devnet.near.org',
-        helperUrl: 'https://helper.devnet.near.org'
       }
     case 'betanet':
       return {
