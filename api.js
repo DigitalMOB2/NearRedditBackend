@@ -159,7 +159,7 @@ const mint = async function (req, res, next) {
 const transfer = async function (req, res, next) {
     // TODO: check if balance is greater or equal to value
     const client = await pool.connect();
-    var query = await client.query(`SELECT balance FROM users WHERE user_name = '${req.body.user_name}'`);
+    var query = await client.query(`SELECT balance FROM users WHERE user_name = '${req.body.user_name1}'`);
     if (query.rows[0].balance >= req.body.value) {
         var result = await client.query(`\
             UPDATE users \
