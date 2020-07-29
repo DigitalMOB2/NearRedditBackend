@@ -2,7 +2,7 @@ const { Contract, KeyPair, connect } = require('near-api-js');
 const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
-const config = require('./config')(process.env.NODE_ENV || 'ci');//'development');
+const config = require('./config')(process.env.NODE_ENV || 'development');//'development');
 
 let ownerAccount;
 let accountsMap = new Map();
@@ -77,6 +77,13 @@ async function createAccounts(numAccounts) {
     return accountsMap;
 }
 
+async function callContractMethod(contract, methodName, args) {
+    const rawResult = await ownerAccount.contract.account.functionCall(ownerAccount.contract.contractId, methodName, args);
+    console.log("callContractMethod[" + methodName + "] tx: " + JSON.stringify(rawResult.transaction.hash));
+
+    return rawResult.transaction.hash;
+}
+
 async function getBalances() {
     console.log('get balances');
     for (const [accountId, account] of accountsMap.entries()) {
@@ -117,67 +124,67 @@ async function totalSupply() {
 // return true or false
 async function mint(accountId, value) {
     const account = accountsMap.get(accountId);
-    let response;
+    let tx;
     try {
-        response = await account.contract.mint({ tokens: value });
-        console.log("mint:" + JSON.stringify(response));
+        tx = await callContractMethod(account.contract, 'mint', { tokens: value });
+        console.log("mint:" + JSON.stringify(tx));
     } catch (e) {
         console.error(e);
     }
-    return response;
+    return tx;
 }
 
 // return true or false
 async function burn(accountId, value) {
     const account = accountsMap.get(accountId);
-    let response;
+    let tx;
     try {
-        response = await account.contract.burn({ tokens: value });
-        console.log("burn:" + JSON.stringify(response));
+        tx = await callContractMethod(account.contract, 'burn', { tokens: value });
+        console.log("burn:" + JSON.stringify(tx));
     } catch (e) {
         console.error(e);
     }
-    return response;
+    return tx;
 }
 
 // return true or false
 async function transfer(fromAccountId, toAccountId, value) {
     const fromAccount = accountsMap.get(fromAccountId);
     const toAccount = accountsMap.get(toAccountId);
-    let response;
+    let tx;
     try {
-        response = await fromAccount.contract.transfer({to: toAccount.publicKey, tokens: value});
+        tx = await callContractMethod(account.contract, 'transfer', {to: toAccount.publicKey, tokens: value});
         console.log("transfer:" + JSON.stringify(response));
     } catch (e) {
         console.error(e);
     }
-    return response;
+    return tx;
 }
 
 // return true or false
 async function addModerator(accountId) {
     const account = accountsMap.get(accountId);
-    let response;
+    let tx;
     try {
-        response = await ownerAccount.contract.addModerator({ moderator: account.publicKey });
-        console.log("addModerator:" + JSON.stringify(response));
+        tx = await callContractMethod(ownerAccount.contract, 'addModerator', { moderator: account.publicKey });
+        console.log("addModerator:" + JSON.stringify(tx));
     } catch (e) {
         console.error(e);
     }
-    return response;
+    return tx;
 }
 
 // return true or false
 async function removeModerator(accountId) {
     const account = accountsMap.get(accountId);
-    let response;
+    let tx;
     try {
-        response = await ownerAccount.contract.removeModerator({ moderator: account.publicKey });
-        console.log("removeModerator:" + JSON.stringify(response));
+        tx = await callContractMethod(ownerAccount.contract, 'removeModerator', { moderator: account.publicKey });
+        console.log("removeModerator:" + JSON.stringify(tx));
     } catch (e) {
         console.error(e);
     }
-    return response;
+    return tx;
 }
 
 

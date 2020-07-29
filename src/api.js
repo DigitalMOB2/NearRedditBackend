@@ -162,7 +162,9 @@ const mint = async function (req, res, next) {
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name}'`);
 
-        if (await nearAPI.mint(result.rows[0].account_id, req.body.value.toString())) {
+        const tx = await nearAPI.mint(result.rows[0].account_id, req.body.value.toString());
+
+        if (tx) {
             var result = await client.query(`\
             UPDATE users \
             SET balance = balance + ${req.body.value} \
@@ -170,7 +172,7 @@ const mint = async function (req, res, next) {
             `);
 
             console.log('Mint ' + JSON.stringify(req.body.user_name) + ' with value ' + JSON.stringify(req.body.value));
-            res.status(200).send('Mint ' + JSON.stringify(req.body.user_name) + ' with value ' + JSON.stringify(req.body.value));
+            res.status(200).send(tx);
         } else {
             console.log('Mint ' + JSON.stringify(req.body.user_name) + ' failed with value ' + JSON.stringify(req.body.value));
             res.status(400).send('Mint ' + JSON.stringify(req.body.user_name) + ' failed with value ' + JSON.stringify(req.body.value));
@@ -196,7 +198,9 @@ const transfer = async function (req, res, next) {
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name2}'`);
 
-            if (await nearAPI.transfer(query.rows[0].account_id, query2.rows[0].account_id, req.body.value.toString())) {
+        const tx = await nearAPI.transfer(query.rows[0].account_id, query2.rows[0].account_id, req.body.value.toString());
+
+            if (tx) {
                 var result = await client.query(`\
                 UPDATE users \
                 SET balance = balance - ${req.body.value} \
@@ -208,7 +212,7 @@ const transfer = async function (req, res, next) {
                 WHERE user_name = '${req.body.user_name2}';\
                 `);
                 console.log('Transfer ' + JSON.stringify(req.body.value) + ' from ' + JSON.stringify(req.body.user_name1) + ' to ' + JSON.stringify(req.body.user_name2));
-                res.status(200).send('Transfer ' + JSON.stringify(req.body.value) + ' from ' + JSON.stringify(req.body.user_name1) + ' to ' + JSON.stringify(req.body.user_name2));
+                res.status(200).send(tx);
             } else {
                 res.status(401).send("Transfer failed");
             }
@@ -234,7 +238,9 @@ const purchase = async function (req, res, next) {
             var result = await client.query(`\
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name}'`);
-            if (await nearAPI.burn(result.rows[0].account_id, JSON.stringify(price.rows[0].price))) {
+
+        const tx = await nearAPI.burn(result.rows[0].account_id, JSON.stringify(price.rows[0].price));
+            if (tx) {
                 var result = await client.query(`\
                 INSERT INTO purchased_items \
                 VALUES ('${req.body.user_name}', '${req.body.item_name}');\
@@ -245,7 +251,7 @@ const purchase = async function (req, res, next) {
                 WHERE user_name = '${req.body.user_name}';\
                 `);
                 console.log('User ' + JSON.stringify(req.body.user_name) + ' bought ' + JSON.stringify(req.body.item_name) + ' for price ' + JSON.stringify(price.rows[0].price));
-                res.status(200).send('User ' + JSON.stringify(req.body.user_name) + ' bought ' + JSON.stringify(req.body.item_name) + ' for price ' + JSON.stringify(price.rows[0].price));
+                res.status(200).send(tx);
             } else {
                 res.status(401).send("Purchase failed");
             }
@@ -267,7 +273,9 @@ const add_moderator = async function (req, res, next) {
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name}'`);
 
-        if (await nearAPI.addModerator(result.rows[0].account_id)) {
+        const tx = await nearAPI.addModerator(result.rows[0].account_id);
+
+        if (tx) {
             result = await client.query(`\
             UPDATE users \
             SET user_type = 'moderator' \
@@ -275,7 +283,7 @@ const add_moderator = async function (req, res, next) {
             `);
 
             console.log("Moderator " + JSON.stringify(req.body.user_name) + " was added");
-            res.status(200).send(("Moderator " + JSON.stringify(req.body.user_name) + " was added"));
+            res.status(200).send(tx);
         } else {
             res.status(400).send(("Unable to add moderator " + JSON.stringify(req.body.user_name)));
         }
@@ -295,7 +303,9 @@ const remove_moderator = async function (req, res, next) {
         SELECT account_id FROM users\
         WHERE user_name = '${req.body.user_name}'`);
 
-        if (await nearAPI.removeModerator(result.rows[0].account_id)) {
+        const tx = await nearAPI.removeModerator(result.rows[0].account_id);
+
+        if (tx) {
             var result = await client.query(`\
             UPDATE users \
             SET user_type = 'user' \
@@ -303,7 +313,7 @@ const remove_moderator = async function (req, res, next) {
             `);
 
             console.log("Moderator " + JSON.stringify(req.body.user_name) + " was removed");
-            res.status(200).send("Moderator " + JSON.stringify(req.body.user_name) + " was removed");
+            res.status(200).send(tx);
         } else {
             res.status(400).send(("Unable to remove moderator " + JSON.stringify(req.body.user_name)));
         }

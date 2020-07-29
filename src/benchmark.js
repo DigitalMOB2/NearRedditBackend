@@ -6,7 +6,7 @@ const config = require('./config')(process.env.NODE_ENV || 'ci');
 
 
 const NUM_ACCOUNTS = 2;
-const TRANSACTIONS_PER_ACCOUNT = 10;
+const TRANSACTIONS_PER_ACCOUNT = 5;
 
 class Benchmark {
     constructor() {
@@ -101,11 +101,6 @@ class Benchmark {
             contract: masterAccountContract
         };
 
-        this.accountsMap.set(this.ownerAccount.accountId, {
-            publicKey: this.ownerAccount.publicKey,
-            contract: this.ownerAccount.contract
-        });
-
         await masterAccountContract.init({ totalSupply: '10000' });
         const response = await masterAccountContract.balanceOf({ tokenOwner: this.ownerAccount.publicKey });
         console.log("balance:" + JSON.stringify(response));
@@ -116,7 +111,7 @@ class Benchmark {
         console.time('create accounts');
         const accountPrefix = `near-reddit-benchmark-${Date.now()}`;
         let contracts = [];
-        for (let i = 0; i < NUM_ACCOUNTS - 1; i++) {
+        for (let i = 0; i < NUM_ACCOUNTS; i++) {
             const accountId = `${accountPrefix}-${i}`;
             let contract = await (async () => {
                 const keyPair = KeyPair.fromRandom('ed25519');

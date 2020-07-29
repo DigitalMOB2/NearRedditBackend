@@ -2,7 +2,7 @@
   "name": "near-reddit-backend",
   "description": "",
   "license": "(MIT AND Apache-2.0)",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "dev": "node src/main.js",
     "start-dev": "nodemon src/main.js",
