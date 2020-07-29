@@ -78,7 +78,7 @@ async function createAccounts(numAccounts) {
 }
 
 async function callContractMethod(contract, methodName, args) {
-    const rawResult = await ownerAccount.contract.account.functionCall(ownerAccount.contract.contractId, methodName, args);
+    const rawResult = await contract.account.functionCall(contract.contractId, methodName, args);
     console.log("callContractMethod[" + methodName + "] tx: " + JSON.stringify(rawResult.transaction.hash));
 
     return rawResult.transaction.hash;
