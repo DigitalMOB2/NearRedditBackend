@@ -37,23 +37,23 @@ app.use(express.json());
 
 /**
  * @swagger
- * /list_users_table:
+ * /list_users:
  *  get:
- *    description: Get user from table 
+ *    description: Get users 
  *    responses:
  *      '200':
- *        description: Users' table
+ *        description: Get users
  */
 app.get("/list_users", api.list_users_table);
 
 /**
  * @swagger
- * /list_purchased_table:
+ * /list_purchased:
  *  get:
- *    description: Get purchased items from table 
+ *    description: Get purchased items 
  *    responses:
  *      '200':
- *        description: Purchase table
+ *        description: Purchase items
  */
 app.get("/list_purchased", api.list_purchased_table);
 
@@ -154,17 +154,6 @@ app.get("/start_benchmark", api.start_benchmark);
  *        description: Progress value
  */
 app.get("/get_benchmark_progress", api.get_benchmark_progress);
-
-/**
- * @swagger
- * /start_benchmark:
- *  get:
- *    description: Beanchmark result
- *    responses:
- *      '200':
- *        description: The result of the benchmarking process
- */
-app.get("/get_benchmark_result", api.get_benchmark_result);
 
 /**
  * @swagger

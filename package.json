@@ -2,7 +2,7 @@
   "name": "near-reddit-backend",
   "description": "",
   "license": "(MIT AND Apache-2.0)",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "dev": "node src/main.js",
     "start-dev": "nodemon src/main.js",
@@ -25,15 +25,16 @@
     "parcel-bundler": "^1.12.4"
   },
   "dependencies": {
+    "axios": "^0.19.2",
     "base-64": "^0.1.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "near-api-js": "git+https://github.com/near/near-api-js.git#retry-nonce",
     "nodemon": "^2.0.4",
     "pg": "^8.3.0",
+    "regenerator-runtime": "^0.13.5",
     "swagger-jsdoc": "^4.0.0",
-    "swagger-ui-express": "^4.1.4",
-    "near-api-js": "^0.27.0",
-    "regenerator-runtime": "^0.13.5"
+    "swagger-ui-express": "^4.1.4"
   },
   "jest": {
     "testEnvironment": "near-shell/test_environment",

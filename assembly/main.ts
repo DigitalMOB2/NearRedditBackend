@@ -56,7 +56,7 @@ export function allowance(tokenOwner: string, spender: string): u128 {
 }
 
 export function transfer(to: string, tokens: u128): boolean {
-  logging.log("transfer from: " + context.senderPublicKey + " to: " + to + " tokens: " + tokens.toString());
+  logging.log("transfer from: " + context.senderPublicKey + " to: " + to + " tokens: " + tokens.toString() + " used gas: " + context.usedGas.toString());
   const fromAmount = getBalance(context.senderPublicKey);
   assert(fromAmount >= tokens, "not enough tokens on account");
   assert(getBalance(to) <= u128.add(getBalance(to), tokens),"overflow at the receiver side");

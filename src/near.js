@@ -1,7 +1,8 @@
 const { Contract, KeyPair, connect } = require('near-api-js');
-const { response } = require('express');
 const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
+
+const config = require('./config')(process.env.NODE_ENV || 'ci');//'development');
 
 let ownerAccount;
 let accountsMap = new Map();
@@ -12,7 +13,6 @@ async function createAccounts(numAccounts) {
         changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership']
     }
 
-    const config = require('./config')(process.env.NODE_ENV || 'ci');//'development');
     const keyStore = new MergeKeyStore([
         new InMemoryKeyStore(),
         new UnencryptedFileSystemKeyStore('./neardev')
