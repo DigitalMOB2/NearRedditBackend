@@ -2,27 +2,84 @@ const { Contract, KeyPair, connect } = require('near-api-js');
 const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
-const config = require('./config')(process.env.NODE_ENV || 'development');//'development');
+const config = require('./config')(process.env.NODE_ENV || 'ci');//'development');
+
+const contractConfig = {
+    viewMethods: ['totalSupply', 'balanceOf', 'allowance'],
+    changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership']
+}
 
 let ownerAccount;
 let accountsMap = new Map();
 
-async function createAccounts(numAccounts) {
-    const contractConfig = {
-        viewMethods: ['totalSupply', 'balanceOf', 'allowance'],
-        changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership']
+async function loadAccounts(accounts) {
+    let contractName;
+    let masterPublicKey;
+
+    // keystore instance
+    let keyStore = new InMemoryKeyStore();
+
+    accounts.forEach(async acc => {
+        if (acc.user_type == 'owner') {
+            console.log('owner -> ' + JSON.stringify(acc));
+            contractName = acc.account_id;
+            masterPublicKey = acc.public_key;
+        }
+        // generate a new keypair from privateKey
+        const keypair = KeyPair.fromString("ed25519:" + acc.private_key);
+
+        // await keyStore.setKey(nearConfig.networkId, account.name, random);
+        await keyStore.setKey(config.networkId, acc.account_id, keypair);
+    });
+
+    if (!contractName) {
+        console.error('Invalid contractName');
+        return false;
     }
 
+    const near = await connect({ ...config, keyStore });
+
+    const masterAccountAcc = await near.account(contractName);
+    const masterAccountContract = new Contract(masterAccountAcc, contractName, contractConfig);
+
+    ownerAccount = {
+        accountId: contractName,
+        publicKey: masterPublicKey,
+        contract: masterAccountContract
+    };
+
+    accountsMap.set(ownerAccount.accountId, {
+        publicKey: ownerAccount.publicKey,
+        contract: ownerAccount.contract
+    });
+
+    const response = await masterAccountContract.totalSupply({});
+    console.log("balance:" + JSON.stringify(response));
+
+
+    console.log('Loading accounts')
+    accounts.forEach(async acc => {
+        if (acc.user_type != 'owner') {
+            const account = await near.account(acc.account_id);
+            const contract = new Contract(account, contractName, contractConfig);
+
+            accountsMap.set(acc.account_id, {
+                publicKey: acc.public_key,
+                contract: contract
+            });
+        }
+    });
+}
+
+async function createAccounts(numAccounts) {
     const keyStore = new MergeKeyStore([
         new InMemoryKeyStore(),
         new UnencryptedFileSystemKeyStore('./neardev')
     ]);
     const near = await connect({ ...config, keyStore });
 
-    const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
-
     console.log('Setting up and deploying contract');
-    const masterAccountName = `nrb-master-${Date.now()}`;
+    const masterAccountName = `reddit-token-contract-${Date.now()}`;
     const contractName = masterAccountName;
     const keyPair = KeyPair.fromRandom('ed25519');
     await keyStore.setKey(config.networkId, masterAccountName, keyPair);
@@ -40,7 +97,8 @@ async function createAccounts(numAccounts) {
 
     accountsMap.set(ownerAccount.accountId, {
         publicKey: ownerAccount.publicKey,
-        contract: ownerAccount.contract
+        contract: ownerAccount.contract,
+        privateKey: keyPair.secretKey
     });
 
     await masterAccountContract.init({ totalSupply: '20000' });
@@ -52,24 +110,20 @@ async function createAccounts(numAccounts) {
     console.log('Creating accounts')
     console.time('create accounts');
     const accountPrefix = `nrb-user-${Date.now()}`;
-    let contracts = [];
     for (let i = 0; i < numAccounts; i++) {
         const accountId = `${accountPrefix}-${i}`;
-        let contract = await (async () => {
-            const keyPair = KeyPair.fromRandom('ed25519');
-            await keyStore.setKey(config.networkId, accountId, keyPair);
-            await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
-            const account = await near.account(accountId);
-            const contract = new Contract(account, contractName, contractConfig);
+        const keyPair = KeyPair.fromRandom('ed25519');
+        await keyStore.setKey(config.networkId, accountId, keyPair);
+        await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
+        const account = await near.account(accountId);
+        const contract = new Contract(account, contractName, contractConfig);
 
-            accountsMap.set(accountId, {
-                publicKey: '1' + keyPair.publicKey.toString().substring(8),
-                contract: contract
-            });
+        accountsMap.set(accountId, {
+            publicKey: '1' + keyPair.publicKey.toString().substring(8),
+            contract: contract,
+            privateKey: keyPair.secretKey
+        });
 
-            return contract
-        })();
-        //contracts.push(contract);
         process.stdout.write('-');
     }
     console.timeEnd('create accounts');
@@ -153,8 +207,8 @@ async function transfer(fromAccountId, toAccountId, value) {
     const toAccount = accountsMap.get(toAccountId);
     let tx;
     try {
-        tx = await callContractMethod(account.contract, 'transfer', {to: toAccount.publicKey, tokens: value});
-        console.log("transfer:" + JSON.stringify(response));
+        tx = await callContractMethod(fromAccount.contract, 'transfer', {to: toAccount.publicKey, tokens: value});
+        console.log("transfer:" + JSON.stringify(tx));
     } catch (e) {
         console.error(e);
     }
@@ -215,6 +269,7 @@ if (args[0] === 'test') {
 
 module.exports = {
     createAccounts,
+    loadAccounts,
     getBalances,
     balanceOf,
     totalSupply,

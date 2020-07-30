@@ -22,11 +22,20 @@ const init = async function () {
             user_name varchar(100) NOT NULL,\
             account_id varchar(100) NOT NULL,\
             public_key varchar(100) NOT NULL,\
+            private_key varchar(100) NOT NULL,\
             user_type varchar(10) NOT NULL,\
             balance int \
         )");
 
-    let accountsMap = await nearAPI.createAccounts(4).catch(console.error);
+    let accountsMap;
+
+    try {
+        accountsMap = await nearAPI.createAccounts(4);
+    } catch (e) {
+        console.error("createAccounts Failed: " + e);
+        process.exit();
+    }
+
     let users = ['Theresa', 'Eleanor Pena', 'Courtney Henry', 'Leslie Alexander', 'Deveon Lane'];
     let i = 0;
     for (const [accountId, account] of accountsMap.entries()) {
@@ -34,8 +43,8 @@ const init = async function () {
             const type = (i == 0) ? 'owner' : 'user';
             const balance = await nearAPI.balanceOf(accountId);
             await client.query(`\
-                INSERT INTO users (user_name, account_id, public_key, user_type, balance) \
-                VALUES ('${users[i]}', '${accountId}', '${account.publicKey}', '${type}', ${balance})\
+                INSERT INTO users (user_name, account_id, public_key, private_key, user_type, balance) \
+                VALUES ('${users[i]}', '${accountId}', '${account.publicKey}', '${account.privateKey}', '${type}', ${balance})\
                 `);
         } catch (e) {
             console.error(e);
@@ -65,7 +74,32 @@ const init = async function () {
 
     client.release()
 
-    benchmark.createBenchmarkAccounts();
+    try {
+        await benchmark.createBenchmarkAccounts();
+    } catch (e) {
+        console.error("createBenchmarkAccounts Failed: " + e);
+        process.exit();
+    }
+};
+
+const load = async function () {
+    try {
+        const client = await pool.connect()
+        var result = await client.query("SELECT account_id, public_key, private_key, user_type FROM users");
+        client.release();
+
+        await nearAPI.loadAccounts(result.rows);
+    } catch (e) {
+        console.error("loadAccounts Failed: " + e);
+        process.exit();
+    }
+
+    try {
+        await benchmark.createBenchmarkAccounts();
+    } catch (e) {
+        console.error("createBenchmarkAccounts Failed: " + e);
+        process.exit();
+    }
 };
 
 const list_users_table = async function (req, res, next) {
@@ -336,11 +370,18 @@ const start_benchmark = async function (req, res, next) {
 };
 
 const get_benchmark_progress = async function (req, res, next) {
-    res.json({ progress: benchmark.getProgress(), tps: benchmark.getTps() });
+    res.json({
+        progress: benchmark.getProgress(), 
+        tps: benchmark.getTps(), 
+        averageGasBurnt: benchmark.getAverageGasBurnt(),
+        averageTxFee: benchmark.getAverageTxFee(),
+        contract: benchmark.getContract()
+    });
 };
 
 module.exports = {
     init,
+    load,
     list_users_table,
     list_purchased_table,
     get_users,

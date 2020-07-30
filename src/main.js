@@ -29,7 +29,17 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 
-api.init();
+var args = process.argv.slice(2);
+
+const startup = async _ => {
+  if (args[0] === 'init') {
+    await api.init();
+  } else {
+    await api.load();
+  }
+}
+
+startup();
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use(express.json());

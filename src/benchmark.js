@@ -1,12 +1,13 @@
-const { Contract, KeyPair, connect } = require('near-api-js');
+const { Contract, KeyPair, connect, utils } = require('near-api-js');
 const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
 const config = require('./config')(process.env.NODE_ENV || 'ci');
+const BN = require("bn.js");
 
 
-const NUM_ACCOUNTS = 2;
-const TRANSACTIONS_PER_ACCOUNT = 5;
+const NUM_ACCOUNTS = 10;
+const TRANSACTIONS_PER_ACCOUNT = 10;
 
 class Benchmark {
     constructor() {
@@ -16,7 +17,8 @@ class Benchmark {
         this.running = false;
         this.tps = 0;
         this.progress = 0;
-        this.gas = 0;
+        this.averageTxFee = '0';
+        this.averageGasBurnt = '0';
     }
 
     static getInstance() {
@@ -33,6 +35,10 @@ class Benchmark {
 
     getProgress() {
         return this.progress;
+    }
+
+    getContract() {
+        return this.ownerAccount.accountId;
     }
 
     async retrieveGasPrice() {
@@ -61,8 +67,12 @@ class Benchmark {
         return gasPrice;
     }
 
-    getGas() {
-        return this.gas;
+    getAverageGasBurnt() {
+        return this.averageGasBurnt;
+    }
+
+    getAverageTxFee() {
+        return this.averageTxFee;
     }
 
     async createBenchmarkAccounts() {
@@ -76,18 +86,34 @@ class Benchmark {
             changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership']
         }
 
-        const keyStore = new MergeKeyStore([
-            new InMemoryKeyStore(),
-            new UnencryptedFileSystemKeyStore('./neardev')
-        ]);
-        const near = await connect({ ...config, keyStore });
+        let keyStore;
 
-        const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
+        if (config.masterAccount) {
+            keyStore = new MergeKeyStore([
+                new InMemoryKeyStore(),
+                new UnencryptedFileSystemKeyStore('./neardev')
+            ]);
+        } else {
+            // ADD YOUR ACCOUNT HERE with a valid private key
+            const account = {
+                name: 'reddit.testnet',
+                network: 'default',
+                privateKey: "ed25519:4mc4ukS9iJv84n9gz5x2iJWqH1vw8tzY7e35HAUp6xThvXd3hgZ6e8ZmXgkciyVJ5GwNT6W3x8kinKM8Z8QmFrpt"
+            };
+
+            const keypair = utils.key_pair.KeyPair.fromString(account.privateKey);
+            keyStore = new InMemoryKeyStore();
+
+            await keyStore.setKey(config.networkId, account.name, keypair);
+        }
+
+        const near = await connect({ ...config, keyStore });
 
         console.log('Setting up and deploying contract');
         const masterAccountName = `near-reddit-benchmark-master-${Date.now()}`;
         const contractName = masterAccountName;
         const keyPair = KeyPair.fromRandom('ed25519');
+        console.log(" ramndomKey = " + JSON.stringify(keyPair.secretKey));
         await keyStore.setKey(config.networkId, masterAccountName, keyPair);
         const masterAccount = await near.createAccount(masterAccountName, keyPair.publicKey.toString());
         await masterAccount.deployContract(require('fs').readFileSync('./out/main.wasm'));
@@ -105,15 +131,13 @@ class Benchmark {
         const response = await masterAccountContract.balanceOf({ tokenOwner: this.ownerAccount.publicKey });
         console.log("balance:" + JSON.stringify(response));
 
-        console.log("https://explorer.testnet.near.org/accounts/" + masterAccountName);
-
         console.log('Creating benchmark accounts')
         console.time('create accounts');
         const accountPrefix = `near-reddit-benchmark-${Date.now()}`;
-        let contracts = [];
+
         for (let i = 0; i < NUM_ACCOUNTS; i++) {
-            const accountId = `${accountPrefix}-${i}`;
-            let contract = await (async () => {
+            try {
+                const accountId = `${accountPrefix}-${i * 13}`;
                 const keyPair = KeyPair.fromRandom('ed25519');
                 await keyStore.setKey(config.networkId, accountId, keyPair);
                 await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
@@ -125,9 +149,10 @@ class Benchmark {
                     contract: contract
                 });
 
-                return contract
-            })();
-            process.stdout.write('-');
+                process.stdout.write('-');
+            } catch (e) {
+                console.error(e);
+            }
         }
         console.timeEnd('create accounts');
         this.init = true;
@@ -136,14 +161,18 @@ class Benchmark {
         for (const [accountId, account] of this.accountsMap.entries()) {
             try {
                 await this.ownerAccount.contract.addModerator({ moderator: account.publicKey });
-                await account.contract.mint({ tokens: '10000' });
             } catch (e) {
                 console.error(e);
             }
         }
     }
 
-    async runBenchmark() {
+    async callContractMethod(contract, methodName, args) {
+        const rawResult = await contract.account.functionCall(contract.contractId, methodName, args);
+        return {tx: rawResult.transaction.hash, gas_burnt: rawResult.transaction_outcome.outcome.gas_burnt};
+    }
+
+    async runBenchmark(generateCSV = false) {
         if (!this.init) {
             console.log('Cannot run benchmark, first without createBenchmarkAccounts first');
             return;
@@ -154,28 +183,55 @@ class Benchmark {
             return;
         }
 
+        const startGasPrice = await this.retrieveGasPrice();
+
         this.running = true;
         this.tps = 0;
         this.progress = 0;
-        this.gas = 0;
+        this.averageTxFee = '0';
+        this.averageGasBurnt = '0';
 
         let currentTxCount = 0;
+        let results = [];
         let startTime = Date.now();
         
         console.log('Start Benchmark');
         const all = [];
         let numFailed = 0;
         console.time('benchmark');
+
         for (const [accountId, account] of this.accountsMap.entries()) {
             all.push((async () => {
                 for (let j = 0; j < TRANSACTIONS_PER_ACCOUNT; j++) {
                     const contract = account.contract;
                     try {
-                        console.log('before');
-                        await contract.transfer({to: this.ownerAccount.publicKey, tokens: '1'});
-                        console.log('after');
+                        //mint
+                        let response = await this.callContractMethod(contract, 'mint', { tokens: '100' });
+                        results.push({
+                            tx: response.tx,
+                            type: 'mint',
+                            gas_burnt: response.gas_burnt
+                        });
                         currentTxCount++;
-                        this.progress = currentTxCount / (NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT);
+                        //burn
+                        response = await this.callContractMethod(contract, 'burn', { tokens: '50' });
+                        results.push({
+                            tx: response.tx,
+                            type: 'burn',
+                            gas_burnt: response.gas_burnt
+                        });
+                        currentTxCount++;
+                        //transfer
+                        response = await this.callContractMethod(contract, 'transfer', { to: this.ownerAccount.publicKey, tokens: '1' });
+                        results.push({
+                            tx: response.tx,
+                            type: 'transfer',
+                            gas_burnt: response.gas_burnt
+                        });
+                        currentTxCount++;
+
+
+                        this.progress = currentTxCount / (NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * 3);
                         this.tps = currentTxCount / ((Date.now() - startTime) / 1000);
                     } catch (e) {
                         numFailed++;
@@ -190,7 +246,44 @@ class Benchmark {
         console.timeEnd('benchmark');
         console.log('Number of failed transactions: ', numFailed);
         console.log('Benchmark ended');
+
+        const endGasPrice = await this.retrieveGasPrice();
+
+
+        var averageGasPrice = (startGasPrice + endGasPrice) / 2;
+        var averageGasBurnt = new BN(results[0].gas_burnt);
+
+        results.forEach(t => {
+            averageGasBurnt = averageGasBurnt.add(new BN(t.gas_burnt)).div(new BN(2));
+        });
+
+        var averageTxFee = averageGasBurnt.mul(new BN(averageGasPrice));
+
+        if (generateCSV) {
+            const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+            const csvWriter = createCsvWriter({
+                path: 'benchmark.csv',
+                header: [
+                    { id: 'tx', title: 'Transaction' },
+                    { id: 'type', title: 'Type' },
+                    { id: 'gas_burnt', title: 'Gas Burnt' }
+                ]
+            });
+
+
+            await csvWriter.writeRecords(results);
+            //console.log(t.tx + ' ' + t.type + ' ' + t.gas_burnt);
+        }
+
+        
         this.progress = 1;
+        this.averageTxFee = averageTxFee.toString(10);
+        this.averageGasBurnt = averageGasBurnt.toString(10);
+
+        console.log('averageTxFee: ' + this.averageTxFee);
+        console.log('averageGasBurnt: ' + this.averageGasBurnt);
+        console.log('averageGasPrice: ' + averageGasPrice.toString(10));
+
         this.running = false;
     }
 
@@ -202,9 +295,9 @@ if (args[0] === 'test') {
     const test = async _ => {
         const benchmark = Benchmark.getInstance();
         await benchmark.createBenchmarkAccounts();
-        await benchmark.runBenchmark().catch(console.error);
+        await benchmark.runBenchmark(true).catch(console.error);
 
-        console.log(await benchmark.retrieveGasPrice());
+        //console.log(await benchmark.retrieveGasPrice());
 
         /*setInterval(function () {
             console.log(`tps:${benchmark.getTps()} progress:${benchmark.getProgress()}`);

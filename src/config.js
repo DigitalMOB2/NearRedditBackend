@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME || 'token-contract-as'; /* TODO: fill this in! */
+const CONTRACT_NAME = process.env.CONTRACT_NAME || 'reddit-token-contract';
 
 function getConfig (env) {
   switch (env) {
@@ -36,6 +36,14 @@ function getConfig (env) {
         walletUrl: 'http://localhost:4000/wallet',
         contractName: CONTRACT_NAME
       }
+      case 'dmob':
+        return {
+          networkId: 'default',
+          nodeUrl: 'http://161.35.64.196:3030',
+          contractName: CONTRACT_NAME,
+          walletUrl: 'https://wallet.testnet.near.org',
+          helperUrl: 'https://helper.testnet.near.org'
+        }
     case 'test':
     case 'ci':
       return {
