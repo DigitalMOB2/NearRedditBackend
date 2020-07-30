@@ -1,12 +1,13 @@
 Table users:
-    user_name -> public_key
-    access_key
+    user_name
+    account_id
+    public_key
+    private_key
     user_type
     balance
 
 Table items:
-    item_name -> public_key
-    image_link
+    item_name
     price
 
 Table purchased_items:
@@ -23,18 +24,21 @@ Owner:
     - mint
     - addModerator
     - removeModerator
-    - benchmarking with progress (API to get progress)
+    - benchmark with progress
     - real wallet
+    - burn
 
 Moderator:
     - transfer
     - mint
-    - token balance -> mint/burn related to owner's total supply
+    - token balance
+    - burn
 
 Users:
     - transfer
     - burn
-    - token balance -> burn related to owner's total supply
+    - token balance
+    - burn
 
 APIs:
     - login(user_name)
@@ -47,7 +51,7 @@ APIs:
         - get_results
     - mint(user_name, value)
     - transfer(from, to)
-    //- burn(user_name, value)
+    - purchase(user_name, value)
     - purchase(user_name, value, item_id)
     - add_item(item_name, value, image_link)
     - get_user_items(user_name)

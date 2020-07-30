@@ -6,8 +6,9 @@ const config = require('./config')(process.env.NODE_ENV || 'development');
 const BN = require("bn.js");
 
 
-const NUM_ACCOUNTS = 10;
-const TRANSACTIONS_PER_ACCOUNT = 10;
+const NUM_ACCOUNTS = 20;
+const TRANSACTIONS_PER_ACCOUNT = 20;
+const BATCH = 5;
 
 class Benchmark {
     constructor() {
@@ -16,6 +17,7 @@ class Benchmark {
         this.init = false;
         this.running = false;
         this.tps = 0;
+        this.currentTxCount = 0;
         this.progress = 0;
         this.averageTxFee = '0';
         this.averageGasBurnt = '0';
@@ -37,12 +39,16 @@ class Benchmark {
         return this.progress;
     }
 
+    getCurrentTxCount() {
+        return this.currentTxCount;
+    }
+
     getContract() {
         return this.ownerAccount.accountId;
     }
 
     getTotalTx() {
-        return NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * 3;
+        return NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * BATCH;
     }
 
     async retrieveGasPrice() {
@@ -191,6 +197,7 @@ class Benchmark {
         this.running = true;
         this.tps = 0;
         this.progress = 0;
+        this.currentTxCount = 0;
         this.averageTxFee = '0';
         this.averageGasBurnt = '0';
 
@@ -205,8 +212,8 @@ class Benchmark {
 
         for (const [accountId, account] of this.accountsMap.entries()) {
             all.push((async () => {
+                const contract = account.contract;
                 for (let j = 0; j < TRANSACTIONS_PER_ACCOUNT; j++) {
-                    const contract = account.contract;
                     try {
                         //mint
                         let response = await this.callContractMethod(contract, 'mint', { tokens: '100' });
@@ -215,7 +222,7 @@ class Benchmark {
                             type: 'mint',
                             gas_burnt: response.gas_burnt
                         });
-                        currentTxCount++;
+
                         //burn
                         response = await this.callContractMethod(contract, 'burn', { tokens: '50' });
                         results.push({
@@ -223,7 +230,7 @@ class Benchmark {
                             type: 'burn',
                             gas_burnt: response.gas_burnt
                         });
-                        currentTxCount++;
+
                         //transfer
                         response = await this.callContractMethod(contract, 'transfer', { to: this.ownerAccount.publicKey, tokens: '1' });
                         results.push({
@@ -231,11 +238,26 @@ class Benchmark {
                             type: 'transfer',
                             gas_burnt: response.gas_burnt
                         });
-                        currentTxCount++;
 
+                        //transfer
+                        response = await this.callContractMethod(contract, 'transfer', { to: this.ownerAccount.publicKey, tokens: '1' });
+                        results.push({
+                            tx: response.tx,
+                            type: 'transfer',
+                            gas_burnt: response.gas_burnt
+                        });
 
-                        this.progress = currentTxCount / (NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * 3);
-                        this.tps = currentTxCount / ((Date.now() - startTime) / 1000);
+                        //transfer
+                        response = await this.callContractMethod(contract, 'transfer', { to: this.ownerAccount.publicKey, tokens: '1' });
+                        results.push({
+                            tx: response.tx,
+                            type: 'transfer',
+                            gas_burnt: response.gas_burnt
+                        });
+                        currentTxCount += BATCH;
+
+                        //this.progress = currentTxCount / (NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * BATCH);
+                        //this.tps = currentTxCount / ((Date.now() - startTime) / 1000);
                     } catch (e) {
                         numFailed++;
                         process.stdout.write('E');
@@ -247,6 +269,7 @@ class Benchmark {
 
         await Promise.all(all);
         console.timeEnd('benchmark');
+        console.log('Number of transactions:', currentTxCount);
         console.log('Number of failed transactions: ', numFailed);
         console.log('Benchmark ended');
 
@@ -281,6 +304,7 @@ class Benchmark {
 
         
         this.progress = 1;
+        this.currentTxCount = this.getTotalTx();
         this.averageTxFee = averageTxFee.toString(10);
         this.averageGasBurnt = averageGasBurnt.toString(10);
 

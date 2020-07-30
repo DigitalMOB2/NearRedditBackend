@@ -56,7 +56,7 @@ export function allowance(tokenOwner: string, spender: string): u128 {
 }
 
 export function transfer(to: string, tokens: u128): boolean {
-  logging.log("transfer from: " + context.senderPublicKey + " to: " + to + " tokens: " + tokens.toString() + " used gas: " + context.usedGas.toString());
+  //logging.log("transfer from: " + context.senderPublicKey + " to: " + to + " tokens: " + tokens.toString() + " used gas: " + context.usedGas.toString());
   const fromAmount = getBalance(context.senderPublicKey);
   assert(fromAmount >= tokens, "not enough tokens on account");
   assert(getBalance(to) <= u128.add(getBalance(to), tokens),"overflow at the receiver side");
@@ -84,7 +84,7 @@ export function transferFrom(from: string, to: string, tokens: u128): boolean {
 
 export function burn(tokens: u128): boolean {
   const balance = getBalance(context.senderPublicKey);
-  logging.log("burn from balance: " + balance.toString() + " amount to burn: " + tokens.toString() + " from account: " + context.senderPublicKey);
+  //logging.log("burn from balance: " + balance.toString() + " amount to burn: " + tokens.toString() + " from account: " + context.senderPublicKey);
   assert(balance >= tokens, "not enough tokens to burn");
   total_supply.set('totalSupply', u128.sub(u128.fromString(totalSupply()) , tokens));
   balances.set(context.senderPublicKey, u128.sub(balance , tokens));
@@ -92,9 +92,9 @@ export function burn(tokens: u128): boolean {
 }
 
 export function mint(tokens: u128): boolean {
-  logging.log("from account: " + context.senderPublicKey);
+  //logging.log("from account: " + context.senderPublicKey);
   assert(isOwner(context.senderPublicKey) || isModerator(context.senderPublicKey), "This account can not mint tokens");
-  logging.log("amount to mint: " + tokens.toString());
+  //logging.log("amount to mint: " + tokens.toString());
   total_supply.set('totalSupply', u128.add(u128.fromString(totalSupply()), tokens));
   balances.set(context.senderPublicKey, u128.add(getBalance(context.senderPublicKey), tokens));
   return true;

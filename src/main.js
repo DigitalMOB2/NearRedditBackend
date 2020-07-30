@@ -93,7 +93,7 @@ app.get("/get_users", api.get_users);
  *               user_name:
  *               type: string
  *             example:   # Sample object
- *               user_name: Theresa
+ *               user_name: Deveon Lane
  *  responses:
  *         200:
  *          description: Moderator was added
