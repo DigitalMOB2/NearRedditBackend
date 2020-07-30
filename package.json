@@ -2,7 +2,7 @@
   "name": "near-reddit-backend",
   "description": "",
   "license": "(MIT AND Apache-2.0)",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "scripts": {
     "dev": "node src/main.js",
     "create-accounts": "node src/main.js init",

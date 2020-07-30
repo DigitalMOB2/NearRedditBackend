@@ -6,8 +6,8 @@ const config = require('./config')(process.env.NODE_ENV || 'development');
 const BN = require("bn.js");
 
 
-const NUM_ACCOUNTS = 2;
-const TRANSACTIONS_PER_ACCOUNT = 2;
+const NUM_ACCOUNTS = 10;
+const TRANSACTIONS_PER_ACCOUNT = 10;
 
 class Benchmark {
     constructor() {
@@ -39,6 +39,10 @@ class Benchmark {
 
     getContract() {
         return this.ownerAccount.accountId;
+    }
+
+    getTotalTx() {
+        return NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * 3;
     }
 
     async retrieveGasPrice() {

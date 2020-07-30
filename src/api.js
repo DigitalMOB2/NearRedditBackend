@@ -373,6 +373,7 @@ const get_benchmark_progress = async function (req, res, next) {
     res.json({
         progress: benchmark.getProgress(), 
         tps: benchmark.getTps(), 
+        totalTx: benchmark.getTotalTx(),
         averageGasBurnt: benchmark.getAverageGasBurnt(),
         averageTxFee: benchmark.getAverageTxFee(),
         contract: benchmark.getContract()
