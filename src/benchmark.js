@@ -185,7 +185,6 @@ class Benchmark {
         this.averageTxFee = '0';
         this.averageGasBurnt = '0';
 
-        let currentTxCount = 0;
         let results = [];
         let startTime = Date.now();
         
@@ -238,22 +237,23 @@ class Benchmark {
                             type: 'transfer',
                             gas_burnt: response.gas_burnt
                         });
-                        currentTxCount += BATCH;
+                        this.currentTxCount += BATCH;
 
-                        //this.progress = currentTxCount / (NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * BATCH);
-                        //this.tps = currentTxCount / ((Date.now() - startTime) / 1000);
+                        //this.progress = this.currentTxCount / (NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT * BATCH);
+                        //this.tps = this.currentTxCount / ((Date.now() - startTime) / 1000);
                     } catch (e) {
                         numFailed++;
-                        process.stdout.write('E');
                         console.error(e);
                     }
                 }
+
+                console.log(`Benchmark transactions : ${this.currentTxCount}/${this.getTotalTx()}`);
             })());
         }
 
         await Promise.all(all);
         console.timeEnd('benchmark');
-        console.log('Number of transactions:', currentTxCount);
+        console.log('Number of transactions:', this.currentTxCount);
         console.log('Number of failed transactions: ', numFailed);
         console.log('Benchmark ended');
 
