@@ -6,8 +6,8 @@ const config = require('./config')(process.env.NODE_ENV || 'development');
 const BN = require("bn.js");
 
 
-const NUM_ACCOUNTS = 20;
-const TRANSACTIONS_PER_ACCOUNT = 20;
+const NUM_ACCOUNTS = 10;
+const TRANSACTIONS_PER_ACCOUNT = 10;
 const BATCH = 5;
 
 class Benchmark {
