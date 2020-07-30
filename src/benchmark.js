@@ -6,8 +6,8 @@ const config = require('./config')(process.env.NODE_ENV || 'development');
 const BN = require("bn.js");
 
 
-const NUM_ACCOUNTS = 10;
-const TRANSACTIONS_PER_ACCOUNT = 10;
+const NUM_ACCOUNTS = 5;
+const TRANSACTIONS_PER_ACCOUNT = 20;
 const BATCH = 5;
 
 class Benchmark {
@@ -96,26 +96,10 @@ class Benchmark {
             changeMethods: ['init', 'transfer', 'approve', 'transferFrom', 'addModerator', 'removeModerator', 'burn', 'mint', 'transferOwnership']
         }
 
-        let keyStore;
-
-        //if (config.masterAccount) {
-            keyStore = new MergeKeyStore([
+        let keyStore = new MergeKeyStore([
                 new InMemoryKeyStore(),
                 new UnencryptedFileSystemKeyStore('./neardev')
             ]);
-        /*} else {
-            // ADD YOUR ACCOUNT HERE with a valid private key
-            const account = {
-                name: 'reddit.testnet',
-                network: 'default',
-                privateKey: "ed25519:4mc4ukS9iJv84n9gz5x2iJWqH1vw8tzY7e35HAUp6xThvXd3hgZ6e8ZmXgkciyVJ5GwNT6W3x8kinKM8Z8QmFrpt"
-            };
-
-            const keypair = utils.key_pair.KeyPair.fromString(account.privateKey);
-            keyStore = new InMemoryKeyStore();
-
-            await keyStore.setKey(config.networkId, account.name, keypair);
-        }*/
 
         const near = await connect({ ...config, keyStore });
 
