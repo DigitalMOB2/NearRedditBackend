@@ -2,7 +2,7 @@ const { Contract, KeyPair, connect } = require('near-api-js');
 const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
-const config = require('./config')(process.env.NODE_ENV || 'ci');//'development');
+const config = require('./config')(process.env.NODE_ENV || 'development');//'development');
 
 const contractConfig = {
     viewMethods: ['totalSupply', 'balanceOf', 'allowance'],
@@ -57,7 +57,7 @@ async function loadAccounts(accounts) {
     console.log("balance:" + JSON.stringify(response));
 
 
-    console.log('Loading accounts')
+    console.log('Loading accounts');
     accounts.forEach(async acc => {
         if (acc.user_type != 'owner') {
             const account = await near.account(acc.account_id);
@@ -69,6 +69,7 @@ async function loadAccounts(accounts) {
             });
         }
     });
+    console.log('Loading accounts done');
 }
 
 async function createAccounts(numAccounts) {
@@ -107,7 +108,7 @@ async function createAccounts(numAccounts) {
 
     console.log("https://explorer.testnet.near.org/accounts/" + masterAccountName);
 
-    console.log('Creating accounts')
+    console.log('Creating accounts');
     console.time('create accounts');
     const accountPrefix = `nrb-user-${Date.now()}`;
     for (let i = 0; i < numAccounts; i++) {
@@ -127,6 +128,8 @@ async function createAccounts(numAccounts) {
         process.stdout.write('-');
     }
     console.timeEnd('create accounts');
+
+    console.log('Creating accounts done');
 
     return accountsMap;
 }

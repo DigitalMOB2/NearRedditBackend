@@ -2,12 +2,12 @@ const { Contract, KeyPair, connect, utils } = require('near-api-js');
 const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
-const config = require('./config')(process.env.NODE_ENV || 'ci');
+const config = require('./config')(process.env.NODE_ENV || 'development');
 const BN = require("bn.js");
 
 
-const NUM_ACCOUNTS = 10;
-const TRANSACTIONS_PER_ACCOUNT = 10;
+const NUM_ACCOUNTS = 2;
+const TRANSACTIONS_PER_ACCOUNT = 2;
 
 class Benchmark {
     constructor() {
@@ -88,12 +88,12 @@ class Benchmark {
 
         let keyStore;
 
-        if (config.masterAccount) {
+        //if (config.masterAccount) {
             keyStore = new MergeKeyStore([
                 new InMemoryKeyStore(),
                 new UnencryptedFileSystemKeyStore('./neardev')
             ]);
-        } else {
+        /*} else {
             // ADD YOUR ACCOUNT HERE with a valid private key
             const account = {
                 name: 'reddit.testnet',
@@ -105,7 +105,7 @@ class Benchmark {
             keyStore = new InMemoryKeyStore();
 
             await keyStore.setKey(config.networkId, account.name, keypair);
-        }
+        }*/
 
         const near = await connect({ ...config, keyStore });
 
@@ -113,7 +113,6 @@ class Benchmark {
         const masterAccountName = `near-reddit-benchmark-master-${Date.now()}`;
         const contractName = masterAccountName;
         const keyPair = KeyPair.fromRandom('ed25519');
-        console.log(" ramndomKey = " + JSON.stringify(keyPair.secretKey));
         await keyStore.setKey(config.networkId, masterAccountName, keyPair);
         const masterAccount = await near.createAccount(masterAccountName, keyPair.publicKey.toString());
         await masterAccount.deployContract(require('fs').readFileSync('./out/main.wasm'));
@@ -157,7 +156,7 @@ class Benchmark {
         console.timeEnd('create accounts');
         this.init = true;
 
-        console.time('initial mint');
+        console.log('initial addModerators');
         for (const [accountId, account] of this.accountsMap.entries()) {
             try {
                 await this.ownerAccount.contract.addModerator({ moderator: account.publicKey });
@@ -263,6 +262,7 @@ class Benchmark {
             const createCsvWriter = require('csv-writer').createObjectCsvWriter;
             const csvWriter = createCsvWriter({
                 path: 'benchmark.csv',
+                append: true,
                 header: [
                     { id: 'tx', title: 'Transaction' },
                     { id: 'type', title: 'Type' },
