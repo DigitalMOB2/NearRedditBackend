@@ -162,7 +162,17 @@ class Benchmark {
 
     async callContractMethod(contract, methodName, args) {
         const rawResult = await contract.account.functionCall(contract.contractId, methodName, args);
-        return {tx: rawResult.transaction.hash, gas_burnt: rawResult.transaction_outcome.outcome.gas_burnt};
+
+        const gasBurntByTx = rawResult.transaction_outcome
+            ? new BN(rawResult.transaction_outcome.outcome.gas_burnt)
+            : new BN(0);
+        const gasBurntByReceipts = rawResult.receipts_outcome
+            ? rawResult.receipts_outcome
+                .map((receipt) => new BN(receipt.outcome.gas_burnt))
+                .reduce((gasBurnt, currentFee) => gasBurnt.add(currentFee), new BN(0))
+            : new BN(0);
+
+        return {tx: rawResult.transaction.hash, gas_burnt: gasBurntByTx.add(gasBurntByReceipts)};
     }
 
     async runBenchmark(generateCSV = false) {
@@ -264,8 +274,10 @@ class Benchmark {
         var averageGasBurnt = new BN(results[0].gas_burnt);
 
         results.forEach(t => {
-            averageGasBurnt = averageGasBurnt.add(new BN(t.gas_burnt)).div(new BN(2));
+            averageGasBurnt.add(new BN(t.gas_burnt));
         });
+
+        averageGasBurnt.div(new BN(results.length));
 
         var averageTxFee = averageGasBurnt.mul(new BN(averageGasPrice));
 
